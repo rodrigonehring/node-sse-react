@@ -1,0 +1,12 @@
+{
+  "name": "node-sse",
+  "version": "1.0.0",
+  "main": "app.js",
+  "author": "rodrigonehring",
+  "license": "MIT",
+  "dependencies": {
+    "body-parser": "^1.17.2",
+    "ejs": "^2.5.7",
+    "express": "^4.15.4"
+  }
+}

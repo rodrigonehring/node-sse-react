@@ -1,26 +1,11 @@
 <!DOCTYPE html>
 <html>
   <body>
-    Param ${id}:
-    <h3 id="total">
-      Users connected:
-      <span>
-        0
-      </span>
-    </h3>
-    <script type="text/javascript">
+    <h3 id="total"> Users connected: <span> 0 </span> </h3>
 
-      const sourceAll = new EventSource('/sse/all');
-      const usersTotal = document.querySelector('#total span');
+    <div id="root"></div>
 
-      sourceAll.onmessage = function(e) {
-        const data = JSON.parse(e.data);
-
-        if (data.event === 'user_connection') {
-          usersTotal.innerHTML = data.data.total;
-        }
-      }
-
-    </script>
+    <script type="text/javascript" src="http://localhost:8000/bundle.js"></script>
+    <script type="text/javascript" src="http://localhost:8000/vendor.js"></script>
   </body>
 </html>

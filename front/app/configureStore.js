@@ -1,14 +1,34 @@
-import { createStore } from 'redux'
+import { createStore, applyMiddleware, compose } from 'redux'
+import createSagaMiddleware from 'redux-saga'
 
-function reducer(state = { olar: true }, action) {
-  // For now, don't handle any actions
-  // and just return the state given to us.
-  return state
-}
+import mySaga from './sagas'
+import rootReducer from './reducers/rootReducer'
 
-export default function() {
-  return createStore(
-    reducer, /* preloadedState, */
-    window.__REDUX_DEVTOOLS_EXTENSION__ && window.__REDUX_DEVTOOLS_EXTENSION__()
-  );
+
+export default function(initialState) {
+  // create the saga middleware
+  const sagaMiddleware = createSagaMiddleware()
+  const middlewares = [ sagaMiddleware ]
+
+  // redux devtools extension chrome
+  const composeEnhancers = window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ || compose
+
+  const finalCreateStore = composeEnhancers(
+    applyMiddleware(...middlewares))
+    (createStore)
+
+  // mount it on the Store
+  const store = finalCreateStore(rootReducer, initialState)
+
+  // Hot reload reducers (requires Webpack or Browserify HMR to be enabled)
+  if (module.hot) {
+    module.hot.accept('./reducers/rootReducer.js', () =>
+      store.replaceReducer(require('./reducers/rootReducer').default)
+    );
+  }
+
+  // then run the saga
+  sagaMiddleware.run(mySaga)
+
+  return store;
 }

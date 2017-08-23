@@ -32,7 +32,10 @@ app.get('/sse/all', sse.route({
     sse.emitTo({
       prefix: 'all',
       event: 'user_connection',
-      data: { total: sse.clientsConnected({ prefix: 'all' }) }
+      data: {
+        prefix: 'all',
+        total: sse.clientsConnected({ prefix: 'all' })
+      }
     });
   }
 

@@ -60,7 +60,7 @@ class SSE {
       return console.log('No clients for: ', where);
     }
 
-    const str = `data: ${JSON.stringify({ event, data })} \n\n`;
+    const str = `data: ${JSON.stringify({ type: event, payload: data })} \n\n`;
 
     Object
       .keys(this.clients[where])

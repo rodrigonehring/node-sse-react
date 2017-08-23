@@ -1,0 +1,23 @@
+user
+  friends
+
+event
+  owner userId
+  invites []
+  details
+    description
+  local [
+    {  placeId, votes } // max 1 vote per user?
+  ]
+  date [
+    { day, hour, votes } // max 1 vote per user?
+  ]
+
+places
+  name
+  address
+  description
+  site
+  facebook
+  photos
+  phone

@@ -21,18 +21,3 @@ ReactDom.render(
 
 
 // to help plan a night out with friends, crowdsourcing the date/time and choice of bar/restaurant
-
-// ================================
-// DELETE
-// ================================
-
-const sourceAll = new EventSource('/sse/all')
-const usersTotal = document.querySelector('#total span')
-
-sourceAll.onmessage = function(e) {
-  const data = JSON.parse(e.data)
-
-  if (data.event === 'user_connection') {
-    usersTotal.innerHTML = data.data.total
-  }
-}

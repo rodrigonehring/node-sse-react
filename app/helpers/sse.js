@@ -5,75 +5,81 @@ const sseConfig = {
   'Transfer-Encoding': true,
 };
 
-function mountWhere(prefix, params = {}) {
-  if (!prefix) {
-    throw new Error('Must insert prefix to mount where');
+const sse = channelHandler();
+
+app.get('/sse/accounts/:userId', (req, res) => {
+  req.socket.setTimeout(Number.MAX_VALUE);
+  res.writeHead(200, sseConfig);
+  res.write('\n');
+
+  const removeClient = sse.addClient(`accounts-${req.params.userId}`);
+
+  req.on('close', removeClient);
+});
+
+app.get('/online/:userId', (req, res) => {
+  const users = sse.countClients(`accounts-${req.params.userId}`);
+  res.send({ users });
+});
+
+function channelHandler() {
+  const clients = {};
+  let idx = 0;
+
+  function addClient(channel, client) {
+    const id = idx++;
+
+    if (clients[channel]) {
+      clients[channel][id] = client;
+    } else {
+      clients[channel] = { [id]: client };
+    }
+
+    return () => removeClient(channel, id);
   }
 
-  const where = Object.keys(params)
-    .map(param => `[${param}]:${params[param]}`)
-    .join(':');
+  function removeClient(channel, id) {
+    if (!clients[channel]) {
+      return;
+    }
 
-  return where ? `${prefix}-${where}` : prefix;
-}
-
-class SSE {
-  constructor() {
-    this.currentIndex = 0;
-    this.clients = {}; // <- Keep a map of attached clients
-  }
-
-  // pattern: arrayOf ids
-  route({ params, prefix }, cb) {
-    return (req, res) => {
-      req.socket.setTimeout(Number.MAX_VALUE);
-      res.writeHead(200, sseConfig);
-      res.write('\n');
-
-      const paramsObj = params && params.reduce((acc, curr) => {
-        acc[curr] = req.params[curr];
-
-        return acc;
-      }, {});
-
-      const where = mountWhere(prefix, paramsObj);
-
-      const id = this.currentIndex++;
-
-      if (this.clients[where]) {
-        this.clients[where][id] = res;
-      } else {
-        this.clients[where] = { [id]: res };
-      }
-
-      req.on('close', () => { delete this.clients[where][id] });
-
-      cb && cb(req, res);
+    if (Object.keys(clients[channel]) > 1) {
+      delete clients[channel][id];
+    } else {
+      delete clients[channel];
     }
   }
 
-  // config: { data: {}, params: {} }
-  emitTo({ prefix, params, data, event }) {
-    const where = mountWhere(prefix, params);
-
-    if (!this.clients[where]) {
-      return console.log('No clients for: ', where);
+  function emit(channel, message) {
+    if (!clients[channel]) {
+      console.log('no clients for this channel', channel);
+      return;
     }
 
-    const str = `data: ${JSON.stringify({ type: event, payload: data })} \n\n`;
+    const data = JSON.stringify(message);
 
     Object
-      .keys(this.clients[where])
-      .forEach(id =>
-        this.clients[where][id].write(str)
-      );
+      .keys(clients[channel])
+      .forEach(id => {
+        clients[channel][id].write(`data: ${data}`);
+      })
   }
 
-  clientsConnected({ prefix, params }) {
-    const where = mountWhere(prefix, params);
+  function countClients(channel) {
+    if (!clients[channel]) {
+      console.log('no clients for this channel', channel);
+      return;
+    }
 
-    return this.clients[where] ? Object.keys(this.clients[where]).length : 0;
+    return Object.keys(clients[channel]).length;
+  }
+
+  return {
+    countClients,
+    addClient,
+    emit,
   }
 }
 
-module.exports = SSE;
+
+module.exports = channelHandler;

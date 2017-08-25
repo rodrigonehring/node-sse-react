@@ -1,5 +1,5 @@
-function enableSse(dispatch, url = '/sse/all') {
-  const source = new EventSource('/sse/all')
+function enableSse(dispatch, url) {
+  const source = new EventSource(url)
 
   source.onmessage = function(e) {
     const { type, payload } = JSON.parse(e.data)

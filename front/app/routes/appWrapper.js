@@ -6,6 +6,7 @@ class AppWrapper extends React.Component {
 
   componentWillMount() {
     this.props.sseAll()
+    this.props.sseStats()
   }
 
   render() {
@@ -23,7 +24,8 @@ const mapStateToProps = state => ({ online: state.online })
 
 const mapDispatchToProps = (dispatch) => {
   return {
-    sseAll: () => sse(dispatch, '/sse/all')
+    sseAll: () => sse(dispatch, '/sse/accounts/customerid1/userid1'),
+    sseStats: () => sse(dispatch, '/sse/stats'),
   }
 }
 

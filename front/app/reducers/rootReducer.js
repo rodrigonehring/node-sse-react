@@ -1,9 +1,9 @@
-function reducer(state = { online: 0 }, { type, payload }) {
+function reducer(state = { stats: [] }, { type, payload }) {
   switch (type) {
     case 'sse/event/user_connection':
       return {
         ...state,
-        online: payload.total
+        stats: payload
       }
 
     default:

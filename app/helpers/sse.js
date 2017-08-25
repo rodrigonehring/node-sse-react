@@ -5,25 +5,9 @@ const sseConfig = {
   'Transfer-Encoding': true,
 };
 
-const sse = channelHandler();
-
-app.get('/sse/accounts/:userId', (req, res) => {
-  req.socket.setTimeout(Number.MAX_VALUE);
-  res.writeHead(200, sseConfig);
-  res.write('\n');
-
-  const removeClient = sse.addClient(`accounts-${req.params.userId}`);
-
-  req.on('close', removeClient);
-});
-
-app.get('/online/:userId', (req, res) => {
-  const users = sse.countClients(`accounts-${req.params.userId}`);
-  res.send({ users });
-});
-
 function channelHandler() {
   const clients = {};
+  const users = {};
   let idx = 0;
 
   function addClient(channel, client) {
@@ -35,7 +19,67 @@ function channelHandler() {
       clients[channel] = { [id]: client };
     }
 
-    return () => removeClient(channel, id);
+    statsUsers();
+
+    return () => {
+      statsUsers();
+      removeClient(channel, id);
+    }
+  }
+
+  function addUser(customerId, userId, fingerprint, client) {
+    const id = idx++;
+    debugger
+
+    if (!users[customerId]) {
+      users[customerId] = {};
+    }
+
+    if (!users[customerId][userId]) {
+      users[customerId][userId] = {};
+    }
+
+    if (!users[customerId][userId][fingerprint]) {
+      users[customerId][userId][fingerprint] = {};
+    }
+
+    users[customerId][userId][fingerprint][id] = client;
+
+    statsUsers();
+
+    return () => {
+      statsUsers();
+      if (Object.keys(users[customerId][userId][fingerprint]).length > 1) {
+        delete users[customerId][userId][fingerprint][id];
+      } else {
+        delete users[customerId][userId][fingerprint];
+        if (!Object.keys(users[customerId][userId])) {
+          delete users[customerId][userId];
+        }
+      }
+    }
+  }
+
+  function statsUsers() {
+    debugger;
+    const payload = Object
+      .keys(users)
+      .map(customer => ({
+        customerId: customer,
+        users: Object
+          .keys(users[customer])
+          .map(user => ({
+            userId: user,
+            fingerprints: Object
+              .keys(users[customer][user])
+              .map(finger => ({
+                fingerprintId: finger,
+                clients: Object.keys(users[customer][user][finger])
+              }))
+          }))
+      }));
+
+    return emit('stats', { type: 'user_connection', payload });
   }
 
   function removeClient(channel, id) {
@@ -51,7 +95,9 @@ function channelHandler() {
   }
 
   function emit(channel, message) {
+    debugger;
     if (!clients[channel]) {
+
       console.log('no clients for this channel', channel);
       return;
     }
@@ -61,7 +107,7 @@ function channelHandler() {
     Object
       .keys(clients[channel])
       .forEach(id => {
-        clients[channel][id].write(`data: ${data}`);
+        clients[channel][id].write(`data: ${data} \n\n`);
       })
   }
 
@@ -77,9 +123,12 @@ function channelHandler() {
   return {
     countClients,
     addClient,
+    addUser,
     emit,
   }
 }
 
-
-module.exports = channelHandler;
+module.exports = {
+  sse: channelHandler(),
+  sseConfig,
+};
